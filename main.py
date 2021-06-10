@@ -32,43 +32,43 @@ from model import *
 from sprites_env.envs import sprites
 from dataset import *
 
-def train(model, batch, optimizer, decoder_optimizer, device):
-    avg_loss = 0.0
-    avg_decoded_loss = 0.0
+# def train(model, batch, optimizer, decoder_optimizer, device):
+#     avg_loss = 0.0
+#     avg_decoded_loss = 0.0
 
-    # for obs, reward_targets in zip(batch['obs'], batch['rewards']):
-    for obs, agent_x, agent_y, target_x, target_y in zip(batch['obs'], batch['agent_x'], batch['agent_y'], batch['target_x'], batch['target_y']):
-        optimizer.zero_grad()
-        obs, agent_x, agent_y, target_x, target_y = obs.to(device), agent_x.to(device), agent_y.to(device), target_x.to(device), target_y.to(device)
-        reward_targets = torch.stack((agent_x, agent_y, target_x, target_y))
-        reward_predicted = model(obs).squeeze()
-        loss = model.criterion(reward_predicted, reward_targets)
-        avg_loss += loss
+#     # for obs, reward_targets in zip(batch['obs'], batch['rewards']):
+#     for obs, agent_x, agent_y, target_x, target_y in zip(batch['obs'], batch['agent_x'], batch['agent_y'], batch['target_x'], batch['target_y']):
+#         optimizer.zero_grad()
+#         obs, agent_x, agent_y, target_x, target_y = obs.to(device), agent_x.to(device), agent_y.to(device), target_x.to(device), target_y.to(device)
+#         reward_targets = torch.stack((agent_x, agent_y, target_x, target_y))
+#         reward_predicted = model(obs).squeeze()
+#         loss = model.criterion(reward_predicted, reward_targets)
+#         avg_loss += loss
 
-        # loss.backward()
-        # optimizer.step()
+#         # loss.backward()
+#         # optimizer.step()
     
-    avg_loss.backward(retain_graph=True)
-    optimizer.step()
+#     avg_loss.backward(retain_graph=True)
+#     optimizer.step()
 
-    for obs in batch['obs']:
-        decoder_optimizer.zero_grad()
-        encoded_img = model.encoder(obs[-1][None, None, :].detach().clone().to(device)).to(device)
-        decoded_img = model.decoder(encoded_img).squeeze().to(device)
-        decoded_loss = model.criterion(decoded_img, obs[-1].to(device))
-        avg_decoded_loss += decoded_loss
+#     for obs in batch['obs']:
+#         decoder_optimizer.zero_grad()
+#         encoded_img = model.encoder(obs[-1][None, None, :].detach().clone().to(device)).to(device)
+#         decoded_img = model.decoder(encoded_img).squeeze().to(device)
+#         decoded_loss = model.criterion(decoded_img, obs[-1].to(device))
+#         avg_decoded_loss += decoded_loss
                 
-        # decoded_loss.backward()
-        # decoder_optimizer.step()
+#         # decoded_loss.backward()
+#         # decoder_optimizer.step()
 
-    avg_decoded_loss.backward()
-    decoder_optimizer.step()
+#     avg_decoded_loss.backward()
+#     decoder_optimizer.step()
 
-    l = len(batch['obs'])
-    avg_loss = avg_loss / l
-    avg_decoded_loss = avg_decoded_loss / l
+#     l = len(batch['obs'])
+#     avg_loss = avg_loss / l
+#     avg_decoded_loss = avg_decoded_loss / l
 
-    return avg_loss.item(), decoded_img[None, :], avg_decoded_loss.item()
+#     return avg_loss.item(), decoded_img[None, :], avg_decoded_loss.item()
 
 
 def main():
@@ -96,72 +96,72 @@ def main():
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
                          args.gamma, args.log_dir, device, False)
 
-    f = args.conditioning_frames
-    t = args.time_steps
-    assert t > f
+    # f = args.conditioning_frames
+    # t = args.time_steps
+    # assert t > f
 
-    # load data
-    dl, traj_images, ground_truth = dataloader(
-        args.image_resolution, t, args.batch_size, f, args.reward, args.dataset_length)
+    # # load data
+    # dl, traj_images, ground_truth = dataloader(
+    #     args.image_resolution, t, args.batch_size, f, args.reward, args.dataset_length)
 
-    traj_images = traj_images.to(device)
+    # traj_images = traj_images.to(device)
 
-    model = Model(t, f+1, args.tasks, args.image_resolution, device).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
-    decoder_optimizer = torch.optim.Adam(
-        model.decoder.parameters(), lr=args.learning_rate)
-    train_loss = []
-    train_decoded_loss = []
+    # model = Model(t, f+1, args.tasks, args.image_resolution, device).to(device)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
+    # decoder_optimizer = torch.optim.Adam(
+    #     model.decoder.parameters(), lr=args.learning_rate)
+    # train_loss = []
+    # train_decoded_loss = []
 
-    for epoch in range(args.num_epochs-1):
-        running_loss = 0.0
-        running_decoded_loss = 0.0
-        num_batch = 0
-        for batch in dl:
-            loss, decoded_img, decoded_loss = train(
-                model, batch, optimizer, decoder_optimizer, device)
-            running_loss += loss
-            running_decoded_loss += decoded_loss
-            num_batch += 1
+    # for epoch in range(args.num_epochs-1):
+    #     running_loss = 0.0
+    #     running_decoded_loss = 0.0
+    #     num_batch = 0
+    #     for batch in dl:
+    #         loss, decoded_img, decoded_loss = train(
+    #             model, batch, optimizer, decoder_optimizer, device)
+    #         running_loss += loss
+    #         running_decoded_loss += decoded_loss
+    #         num_batch += 1
 
-        # print or store data
-        running_loss = running_loss / num_batch
-        print('Epoch: {} \tLoss: {:.6f}'.format(epoch, running_loss))
-        train_loss.append(running_loss)
+    #     # print or store data
+    #     running_loss = running_loss / num_batch
+    #     print('Epoch: {} \tLoss: {:.6f}'.format(epoch, running_loss))
+    #     train_loss.append(running_loss)
 
-        running_decoded_loss = running_decoded_loss / num_batch
-        train_decoded_loss.append(running_decoded_loss)
+    #     running_decoded_loss = running_decoded_loss / num_batch
+    #     train_decoded_loss.append(running_decoded_loss)
 
-        writer.add_scalar('Loss/train', running_loss, epoch)
-        writer.add_scalar('Loss/decoded', running_decoded_loss, epoch)
+    #     writer.add_scalar('Loss/train', running_loss, epoch)
+    #     writer.add_scalar('Loss/decoded', running_decoded_loss, epoch)
 
-        if epoch % 5 == 0:
-            decoded_img = decoded_img * 255.0
-            writer.add_image('decoded_epoch{}'.format(
-                epoch), decoded_img.to(torch.uint8))
+    #     if epoch % 5 == 0:
+    #         decoded_img = decoded_img * 255.0
+    #         writer.add_image('decoded_epoch{}'.format(
+    #             epoch), decoded_img.to(torch.uint8))
 
-    # decode and generate images with respect to reward functions
-    output = model.test_decode(traj_images)
-    output = output * 255
+    # # decode and generate images with respect to reward functions
+    # output = model.test_decode(traj_images)
+    # output = output * 255
 
-    img = make_image_seq_strip([output[None, :, None].repeat(
-        3, axis=2).astype(np.float32)], sep_val=255.0).astype(np.uint8)
-    writer.add_image('ground_truth', ground_truth)
-    writer.add_image('test_decoded', img[0])
+    # img = make_image_seq_strip([output[None, :, None].repeat(
+    #     3, axis=2).astype(np.float32)], sep_val=255.0).astype(np.uint8)
+    # writer.add_image('ground_truth', ground_truth)
+    # writer.add_image('test_decoded', img[0])
 
     # RL
-    # load_dir = './trained_models/'
-    # load_path = os.path.join(load_dir, 'Sprites-v0') # use v0's encoder
-    # encoder = Encoder()
-    # encoder.load_state_dict(torch.load(os.path.join(load_path, 'seed=' + str(args.seed) + ".pt")))
-    # trained_encoder = copy.deepcopy(encoder).to(device)
+    load_dir = './trained_models/'
+    load_path = os.path.join(load_dir, 'Sprites-v0') # use v0's encoder
+    encoder = Encoder()
+    encoder.load_state_dict(torch.load(os.path.join(load_path, 'seed=' + str(args.seed) + ".pt")))
+    trained_encoder = copy.deepcopy(encoder).to(device)
     
     actor_critic = Policy(
         envs.observation_space.shape,
         envs.action_space,
         base_kwargs={'recurrent': args.recurrent_policy},
-        # trained_encoder=trained_encoder
-        trained_encoder=model.encoder
+        trained_encoder=trained_encoder
+        # trained_encoder=model.encoder
         )
     actor_critic.to(device)
 
