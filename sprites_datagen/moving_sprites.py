@@ -1,3 +1,4 @@
+# Impoting necessary packages such as numpy for calculation and cv2 for computer vision and importing pytorch Dataset
 import numpy as np
 import cv2
 from torch.utils.data import Dataset
